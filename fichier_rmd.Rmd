@@ -1,0 +1,777 @@
+---
+title: "Rapport TP PMS"
+output:
+  pdf_document: default
+  html_document: default
+  
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( echo=FALSE)
+```
+
+
+
+YEBKA Massinissa
+
+RANDRIAMORA Yevann
+
+ROUSSEL Guillaume
+
+
+Affiliés à : ENSIMAG
+
+Le : 16/04/2021
+
+Principes et Méthodes Statistiques
+
+# Analyse de la vitesse
+
+## Question 1
+```{r Question 1}
+vent <- read.table("vent.csv", sep=";", header=T)
+attach(vent)
+
+n <- length(A1)
+
+# Création d'un histogramme
+# k est le nombre de classes
+k <- round(log2(n) +1)
+
+mins <- c(min(A1), min(A2))
+maxs <- c(max(A1), max(A2))
+
+# Largeur d'affichage
+ranges <- c(maxs[1] - maxs[1], maxs[2] - mins[2] )
+
+# a0 et a8 sont respectivement la première et la dernière classe
+a0 <- c(mins[1] - 0.025 * ranges[1], mins[2] - 0.025 * ranges[2])
+a8 <- c(maxs[1] + 0.025 * ranges[1], maxs[2] + 0.025 * ranges[2])
+
+# h est le pas des classes
+h <- c ((a8[1] - a0[1]) / k, (a8[2] - a0[2]) / k)
+
+# Affichage des histogrammes
+par(mfcol = c(1, 2))
+hist(A1, breaks = seq(a0[1], a8[1], h[1]), prob=T)
+hist(A2, breaks = seq(a0[2], a8[2], h[2]), prob=T)
+
+# Graphe des probabilités
+# Pour A1
+absA1 <- sort(A1)
+absA1 <- absA1[1 : (n - 1)]
+
+# Pour A2
+absA2 <- sort(A2)
+absA2 <- absA2[1 : (n - 1)]
+
+ordA1 <- vector()
+ordA2 <- vector()
+
+for (i in seq(1, (n - 1))) {0
+  ordA1 <- c(ordA1, qnorm(i / n))
+  ordA2 <- c(ordA2, qnorm(i / n))
+}
+
+# Affichage des droites
+reg <- lm(ordA1 ~ absA1)
+reg2 <- lm(ordA2 ~ absA2)
+
+plot(x=absA1, y=ordA1)
+abline(reg, col="red")
+plot(x=absA2, y=ordA2)
+abline(reg2, col="red")
+
+# Première estimation de sigma
+sigma <- 1 / reg$coefficients[2]
+
+sigma^2
+
+```
+On constate que les points des graphes de probabilités 1 et 2 suivent bien l'allure d'une droite et donc qu'il est raisonnable d'admettre que $A_1$ et $A_2$ sont de loi $\mathcal{N}(0, \sigma^2)$.
+
+## Question 2
+On suppose que $A_1$ et $A_2$ suivent une loi normale centrée et variance $\sigma^2$.
+
+Ainsi $A_1 \hookrightarrow \mathcal{N}(0,\sigma^2)$ et de même pour $A_2$. Alors d'après l'annexe du cours
+
+$$
+\frac{A_1}{\sigma} \hookrightarrow \mathcal{N}(0,1) \Longrightarrow \frac{A_1^2}{\sigma^2} \hookrightarrow \mathcal{G}(\frac{1}{2},\frac{1}{2})
+$$
+
+Et
+
+$$
+\frac{A_2}{\sigma} \hookrightarrow \mathcal{N}(0,1) \Longrightarrow \frac{A_2^2}{\sigma^2} \hookrightarrow \mathcal{G}(\frac{1}{2},\frac{1}{2})
+$$
+
+Donc d'après une propriété du cours de la loi gamma
+
+\begin{equation}
+\boxed{ \frac{A_1^2 + A_2^2}{\sigma^2} \hookrightarrow \mathcal{G}(1,\frac{1}{2}) }
+\end{equation}
+
+Et donc d'après le cours, $\frac{X^2}{\sigma^2}$ suit une loi exponentielle de paramètre $\frac{1}{2}$.
+On vérifie cette hypothèse par une régression linéaire.
+```{r Question 2}
+x <- sqrt(A1^2 + A2^2)
+y <- x^2 / sigma^2
+
+ysorted <- sort(y)
+absY <- ysorted[1 : (n-1)]
+ordY <- log(1 - seq(1 : (n-1))/n)
+plot(x=absY, y=ordY)
+regY <- lm(ordY ~ absY)
+abline(regY, col = 'blue')
+
+regY$coefficients[2] * -1
+
+```
+
+
+
+
+## Question 3
+On a $\forall t \in \mathbb{R^+}$
+
+$\mathbb{P}(\frac{X^2}{\sigma^2} \leq t) = \mathbb{P}(X^2 \leq \sigma^2 t) = \mathbb{P}(X \leq \sigma \sqrt{t}) = 1 - e^{-\frac{t}{2}}$.
+
+On a donc $F_X(\sigma\sqrt{t}) = 1 - e^{-\frac{t}{2}}$ et donc par un changement de variable, $F_X(u) = 1 - e^{-\frac{u^2}{2\sigma^2}}$.
+
+Ainsi on a $\forall x \in \mathbb{R^+}, f_X(x) = \frac{x}{\sigma^2}e^{-\frac{x^2}{2\sigma^2}}$.
+Or $\forall t < 0, \mathbb{P}(\frac{X^2}{\sigma^2} \leq t) = 0$ donc finalement on a
+
+\begin{equation}
+\boxed{ \forall x \in \mathbb{R}, f_X(x) = \frac{x}{\sigma^2}e^{-\frac{x^2}{2\sigma^2}} \chi_{\mathbb{R}^+(x)} }
+\end{equation}
+
+$X$ suit bien une loi de Rayleigh de paramètre $\sigma^2$.
+
+
+## Question 4
+On a
+$$
+F_X(x) = 1 - e^{-\frac{x^2}{2\sigma^2}}
+$$
+$$
+\Downarrow
+$$
+$$
+ln(1 - F_X(x)) = -\frac{1}{2\sigma^2}x^2
+$$
+Donc le graphe de probabilités pour la loi de Rayleigh est $((x_i^*)^2, ln(1 - \frac{i}{n}))_{1 \leq i \leq n - 1}$.
+
+```{r Question 4}
+moy <- sigma * reg$coefficients[1] * -1
+cat("sigma^2 = ", sigma^2)
+
+x <- sqrt(A1^2 + A2^2)
+y <- x^2 / sigma^2
+
+ysorted <- sort(y)
+absY <- ysorted[1 : (n-1)]
+ordY <- log(1 - seq(1 : (n-1))/n)
+plot(x=absY, y=ordY)
+regY <- lm(ordY ~ absY)
+abline(regY, col = 'blue')
+
+```
+
+
+## Question 5
+On a $E[X] = \int_{\mathbb{R}^+} x\frac{x}{\sigma^2} e^{-\frac{x^2}{2\sigma^2}}dx$
+
+On fait une intégration par partie avec
+$$
+\begin{cases}
+u = - e^{-\frac{x^2}{2\sigma^2}} \\
+u' = \frac{x}{2\sigma^2} e^{-\frac{x^2}{2\sigma^2}} \\
+v = x \\
+v' = 1
+\end{cases}
+$$
+ainsi on a
+$$
+E[X] = [-x e^{-\frac{x^2}{2\sigma^2}}]_0^{+\infty} + \int_{\mathbb{R}^+} e^{-\frac{x^2}{2\sigma^2}} = 0 + \sigma\sqrt{\frac{\pi}{2}}
+$$
+D'où
+\begin{equation}
+\boxed{ E[X] = \sigma\sqrt{\frac{\pi}{2}} }
+\end{equation}
+
+Puis on a
+$$
+E[X^2] = \int_{\mathbb{R}^+} x^2\frac{x}{\sigma^2} e^{-\frac{x^2}{2\sigma^2}}dx
+$$
+On fait l'intégration par partie suivante
+$$
+\begin{cases}
+u = - e^{-\frac{x^2}{2\sigma^2}} \\
+u' = \frac{x}{\sigma^2} e^{-\frac{x^2}{2\sigma^2}} \\
+v = x^2 \\
+v' = 2x
+\end{cases}
+$$
+D'où
+$$
+E[X^2] = [-x^2 e^{-\frac{x^2}{2\sigma^2}}]_0^{+\infty} + \int_{\mathbb{R}^+} 2x e^{-\frac{x^2}{2\sigma^2}} = 0 + 2[-\sigma^2 e^{-\frac{x^2}{2\sigma^2}}]_0^{+\infty}
+$$
+D'où
+$$
+E[X^2] = 2\sigma^2
+$$
+Or d'après la formule de Huygens
+$$
+Var[X] = E[X^2] - E[X]^2 = 2\sigma^2 - \frac{\sigma^2 \pi}{2}
+$$
+D'où
+$$
+\boxed{ Var[X] = \frac{4 - \pi}{2} \sigma^2 }
+$$
+
+On a $E[X] = \sigma\sqrt{\frac{\pi}{2}}$, d'où $\sigma^2 = \frac{2}{\pi}E[X]^2$.
+
+On pose $\forall i \in \mathbb{N}, i \in [1, n], X_i = \sqrt{A_{1i}^2 + A_{2i}^2}$
+
+d'où par la méthode des moments
+\begin{equation}
+\boxed{ \tilde{\sigma_n}^2 = \frac{2}{\pi n^2}(\sum_1^n X_i^2) }
+\end{equation}
+Ainsi
+$$
+E[\tilde{\sigma_n}^2] = \frac{2}{\pi n^2}E[(\sum_{i=1}^n X_i^2)]
+$$
+
+$$
+= \frac{2}{\pi n^2} E[\sum X_i^2 + 2\sum_{1 \leq i < j \leq n} X_i X_j]
+$$
+$$
+= \frac{2}{\pi n^2}[ nE[X_i^2] + 2E[\sum_{1 \leq i < j \leq n} X_i X_j] ]
+$$
+Or $\forall i, E[X_i^2] = 2\sigma^2$ et
+$2E[\sum_{1 \leq i < j \leq n} X_i X_j] = (n^2 - n)E[X_1 X_2] = (n^2 - n)E[X_1] E[X_2]$
+
+D'où
+$$
+E[\tilde{\sigma_n}^2] = \frac{2}{\pi n^2}[ 2n\sigma^2 + (n^2 - n) \frac{\sigma^2 \pi}{2} ]
+$$
+D'où enfin
+$$
+E[\tilde{\sigma_n}^2] = \frac{\sigma^2}{\pi n}[ 4 + (n - 1)\pi ]
+$$
+On pose donc l'estimateur débiaisé
+\begin{equation}
+\boxed{ \tilde{\sigma_n}'^2 = \frac{\pi n}{4 + (n - 1)\pi} \tilde{\sigma_n}^2 }
+\end{equation}
+
+
+## Question 6
+On a
+$$
+f_X(x) = \frac{x}{\sigma^2} e^{-\frac{x^2}{2\sigma^2}} \chi_{\mathbb{R}_+}(x)
+$$
+D'où
+$$
+\prod_1^n f_X(x_i) = \frac{\prod x_i}{\sigma^{2n}} e^{-\frac{1}{2\sigma^2}\sum_1^n x_i^2}
+$$
+D'où, en appliquant $ln$ à l'expression précédente strictement positive,
+$$
+ln(\prod f_X(x_i)) = \sum_1^n ln(x_i) - 2nln(\sigma) - \frac{\sum_1^n x_i^2}{2\sigma^2}
+$$
+D'où en dérivant par rapport à $\theta$,
+$$
+\frac{\partial}{\partial\theta}ln(\prod_i^n f_{X_i}(x_i)) = 0 - \frac{2n}{\sigma} + \frac{\sum x_i^2}{2}(\frac{2}{\sigma^3})
+$$
+Donc
+$$
+\frac{\partial}{\partial\theta} ln(\prod_1^n f_{X_i}(x_i)) = 0
+$$
+$$
+\Updownarrow
+$$
+$$
+2n = \frac{\sum_1^n x_i^2}{2n}
+$$
+$$
+\Updownarrow
+$$
+$$
+\sigma^2 = \frac{\sum_1^n X_i^2}{2n}
+$$
+Donc on a la valeur de l'estimateur
+\begin{equation}
+\boxed{ \tilde{\sigma_n}^2 = \frac{\sum_1^n X_i^2}{2n} }
+\end{equation}
+D'où
+\begin{equation}
+\boxed{ E[\tilde{\sigma_n}^2] = \frac{1}{2n}\sum_1^nE(X_i^2) = \frac{1}{2}2\sigma^2 = \sigma^2 }
+\end{equation}
+Donc l'estimateur est sans biais. Ensuite
+$$
+\frac{\partial}{\partial\theta}[E[\tilde{\sigma_n}^2]] = 2\sigma
+$$
+Donc
+$$
+(\frac{\partial}{\partial\theta}[E[\tilde{\sigma_n}^2]])^2 = 4\sigma^2
+$$
+$$
+\frac{\partial}{\partial\theta}(ln(\mathcal{L}(\sigma,X_1,...,X_n))) = -\frac{2n}{\sigma} + \frac{\sum X_i^2}{\sigma^3}
+$$
+D'où
+$$
+E[\frac{\partial^2}{\partial\theta^2}(ln(\mathcal{L}(\sigma,X_1,...,X_n)))] = -\frac{2n}{\sigma^2} + \frac{6n}{\sigma^2} = \frac{4n}{\sigma^2}
+$$
+Ensuite on a
+$$
+Var(\tilde{\sigma_n}^2) = Var(\frac{\sum_1^n X_i^2}{2n}) = \frac{1}{4n^2}\sum_1^n X_i^2
+$$
+Or $\frac{X^2}{\sigma^2} \hookrightarrow \mathcal{E}(\frac{1}{2})$ d'où $\frac{X^2}{\sigma^2} \hookrightarrow \mathcal{G}(1,\frac{1}{2})$
+
+Donc d'après le cours on a
+$$
+\sigma^2\frac{X^2}{\sigma^2} = X^2 \hookrightarrow \mathcal{G}(1,\frac{1}{2\sigma^2})
+$$
+$$
+\Downarrow
+$$
+$$
+Var(X^2) = 4\sigma^4
+$$
+$$
+\Downarrow
+$$
+$$
+Var(\tilde{\sigma_n}^2) = \frac{\sigma^4}{n}
+$$
+Et on a donc $In(\tilde{\sigma_n}^2) Var(\tilde{\sigma_n}^2) = \frac{4n}{\sigma^2} \frac{\sigma^4}{n} = 4\sigma^2$.
+
+D'où
+\begin{equation}
+\boxed{ Eff(\tilde{\sigma_n}^2) = \frac{4\sigma^2}{4\sigma^2} = 1 }
+\end{equation}
+Donc l'estimateur est efficace.
+
+## Question 7
+```{r}
+
+
+ordA1 <- vector()
+ordA2 <- vector()
+
+for (i in seq(1,(n-1))) {0
+  ordA1 <- c(ordA1, qnorm(i/n))
+  ordA2 <- c(ordA2, qnorm(i/n))
+}
+
+# Affichage des droites et calcul de sigma_g
+reg <- lm(ordA1 ~ absA1)
+reg2 <- lm(ordA2 ~ absA2)
+
+sigma_g <- 1 / reg$coefficients[2]
+
+# Calcul de l'estimateur par la méthode des moments de sigma2
+X <- sqrt(A1^2 + A2^2)
+
+# sigma2_1
+sigma_g2 = sigma_g^2
+cat("sigma_g2 = ", sigma_g2)
+
+# sigma2_2
+sigma2_EMM <- (sum(X)^2) * 2 / (pi * n^2)
+cat("sigma2_EMM = ", sigma2_EMM)
+
+# sigma2_3
+sigma2p_EMM <- pi * n / (4 + pi * (n - 1)) * sigma2_EMM
+cat("sigma2p_EMM = ", sigma2p_EMM)
+
+# Calcul de l'estimateur par la méthode du maximum de vraisemblance
+# sigma2_4
+sigma2_EMV <- sum(X^2) / (2 * n)
+cat("sigma2_EMV = ", sigma2_EMV)
+
+```
+
+
+## Question 8
+On a $\forall i,\ X_i \hookrightarrow \mathcal{R}(\delta^2)$.
+
+Or $\frac{X_i}{\sigma^2} \hookrightarrow \mathcal{E}(\frac{1}{2})$ donc selon l'annexe 7.3.4 du cours, on sait que $\sum_1^n X_i$ suit une loi gamma de paramètres $(n, \frac{1}{2})$.
+
+On a alors
+$$
+\mathbb{P}(a \leq \frac{\sum_1^n X_i^2}{\delta^2} \leq b)
+= \mathbb{P}(\frac{1}{a} \geq \frac{\delta^2}{\sum_1^n X_i^2} \geq \frac{1}{b})
+$$
+$$
+= \mathbb{P}(\frac{\sum_1^n X_i^2}{a} \geq \delta^2 \geq \frac{\sum_1^n X_i^2}{b})
+$$
+$$
+= F_{\chi_{2n}^2}(b) - F_{\chi_{2n}^2}(a) = 1 - \alpha = 1 - \frac{\alpha}{2} - \frac{\alpha}{2}
+$$
+On pose alors $a = \mathcal{Z}_{2n,\ 1 - \frac{\alpha}{2}}$ et $b = \mathcal{Z}_{2n,\ \frac{\alpha}{2}}$.
+
+Donc
+$$
+\mathbb{P}(\frac{\sum_1^n X_i^2}{\mathcal{Z}_{2n,\ 1 - \frac{\alpha}{2}}} \geq \delta^2 \geq \frac{\sum_1^n X_i^2}{\mathcal{Z}_{2n,\ \frac{\alpha}{2}}})
+= 1 - \alpha
+$$
+
+D'où finalement
+\begin{equation}
+\boxed{ I = [\frac{\sum_1^n X_i^2}{\mathcal{Z}_{2n,\ 1 - \frac{\alpha}{2}}}, \frac{\sum_1^n X_i^2}{\mathcal{Z}_{2n,\ \frac{\alpha}{2}}}] }
+\end{equation}
+```{r}
+
+alpha <- 0.05
+
+borne_inf <- sum(X^2) / qchisq(p = 1 - (alpha / 2), df = 2 * n)
+borne_inf
+
+borne_sup <- sum(X^2) / qchisq(p = alpha / 2, df = 2 * n)
+borne_sup
+
+```
+
+
+
+
+## Question 9
+On note $m_0 = 9$ m/s et $m$ la moyenne.
+
+On pose $H_0$ : $m \geq m_0$ et $H_1$ : $m < m_0$. En effet il est grave de rejeter $H_0$ à tord, car on construirait des éoliennes dont les roulements s'useraient trop rapidement 
+
+On a l'équivalence
+$$
+m \geq m_0
+$$
+$$
+\Updownarrow
+$$
+$$
+\sigma \sqrt{\frac{\pi}{2}} \geq \sigma_0 \sqrt{\frac{\pi}{2}}
+$$
+$$
+\Updownarrow
+$$
+$$
+\sigma \geq \sigma_0
+$$
+$$
+\Updownarrow
+$$
+$$
+\boxed{ \sigma^2 \geq \sigma_0^2 }
+$$
+On a cette dernière équivalence car $\sigma$ est une valeur toujours positive.
+
+Ensuite on a
+$$
+\alpha = \sup_{H_0} (\mathbb{P}(X_1,...,X_n \in W : \delta^2))
+= \sup_{\delta^2 > \delta_0^2}(\mathbb{P}(\frac{\sum_1^n X_i^2}{2n} < l_{\alpha}))
+$$
+$$
+= \sup_{H_0} (\mathbb{P}(\frac{\sum_1^n X_i^2}{\delta^2} < \frac{2nl_{\alpha}}{\delta^2}))
+$$
+
+D'où d'après la question précédente,
+$$
+\alpha = \sup_{\delta^2 > \delta_0^2}(F_{\chi_{2n}^2}(\frac{2nl_{\alpha}}{\delta^2}))
+= F_{\chi_{2n}^2}(\frac{2nl_{\alpha}}{\delta_0^2})
+$$
+D'où
+$$
+\boxed{ \alpha = F_{\chi_{2n}^2}(\frac{2nl_{\alpha}}{\delta_0^2}) }
+$$
+Donc
+$$
+\boxed{ \frac{\mathcal{Z}_{2n ,1 - \alpha}\delta_0^2}{2n} = l_{\alpha} }
+$$
+On a donc la région critique $(W = (x_1, ..., x_n) : \tilde{\delta_n}^2 < l_{\alpha})$.
+
+Le $\alpha_c$ de la p_valeur vérifie
+$$
+\sum_1^n X_i = \mathcal{Z}_{2n ,1 - \alpha_c}\delta_0^2
+$$
+Donc $\mathcal{Z}_{2n ,1 - \alpha_c} = \frac{\sum_1^n X_i^2}{\delta_0^2} \Longrightarrow \alpha_c = F_{\chi_{2n}^2}(\frac{\sum_1^n X_i^2}{\delta_0^2})$
+
+```{r Question 9}
+
+n <- length(A1)
+
+sigma2_zero <- (9^2) * 2 / pi
+sum(sqrt(A1^2 + A2^2)) / sigma2_zero
+p_val <- pchisq(q = sum(sqrt(A1^2 + A2^2)) / sigma2_zero, df = 2 * n)
+cat("p_valeur = ", p_val)
+
+```
+La p_valeur est très faible et on a donc tendance à ne pas rejeter $H_0$, on ne peut donc pas se permettre de constuire des éoliennes dans cette zone.
+
+
+# Vérifications expérimentales à base de simulations
+
+## Question 1
+```{r Question 1 2, echo=TRUE}
+# Pour simuler un échantillon de taille n de la loi R(sigma²) :
+sigma <- 1
+n <- 100
+
+ech_rayleigh <- sqrt(rnorm(n, mean = 0, sigma^2)^2 + rnorm(n, mean = 0, sigma^2)^2)
+ech_rayleigh
+
+```
+
+## Question 2
+```{r Question 2 2}
+sigma <- 1
+n <- 100
+m <- 200
+alpha <- 0.05
+
+sim_ray <- sqrt(rnorm(n, mean = 0, sigma * sigma)^2 + rnorm(n, mean = 0, sigma * sigma)^2)
+ech_m <- replicate(m, sqrt(rnorm(n, mean = 0, sigma * sigma)^2 + rnorm(n, mean = 0, sigma * sigma)^2))
+
+sigma2 <- sigma^2
+
+borne_inf <- colSums(ech_m^2) / qchisq(p = 1 - (alpha / 2), df = 2 * n)
+borne_sup <- colSums(ech_m^2) / qchisq(p = alpha / 2, df = 2 * n)
+
+res <- (sigma2 <= borne_sup) & (borne_inf <= sigma2)
+
+cat("proportion d'appartenance à l'intervalle de confiance = ", sum(res)/m)
+
+```
+
+## Question 3
+```{r Question 3}
+n <- 100
+m <- 100
+sigma <- 1
+sigma2 <- sigma^2
+
+A1 <- replicate(m, rnorm(n, 0, sigma))
+A2 <- replicate(m, rnorm(n, 0, sigma))
+
+# Graphe des probabilités
+# Pour A1
+absA1 = matrix(nrow = n, ncol = m)
+for (i in seq(1, m)) {0
+  absA1[,i] <- sort(A1[,i])
+}
+absA1 <- absA1[1:(n-1)]
+
+# Pour A2
+absA2 = matrix(nrow = n, ncol = m)
+for (i in seq(1, m)) {0
+  absA2[,i] <- sort(A2[,i])
+}
+absA2 <- absA2[1:(n-1)]
+
+
+ordA1 <- vector()
+ordA2 <- vector()
+
+for (i in seq(1,(n-1))) {0
+  ordA1 <- c(ordA1, qnorm(i/n))
+  ordA2 <- c(ordA2, qnorm(i/n))
+}
+
+# Affichage des droites et calcul de sigma_g
+reg <- lm(ordA1 ~ absA1)
+reg2 <- lm(ordA2 ~ absA2)
+
+sigma_g <- 1 / reg$coefficients[2]
+sigma_g2 = sigma_g^2
+
+# Calcul de l'estimateur par la méthode des moments de sigma2
+X <- sqrt(A1^2 + A2^2)
+sigma2_EMM <- (colSums(X)^2) * 2 / (pi * n^2)
+
+sigma2p_EMM <- pi * n / (4 + pi * (n - 1)) * sigma2_EMM
+
+# Calcul de l'estimateur par la méthode du maximum de vraisemblance
+sigma2_EMV <- colSums(X^2) / (2 * n)
+
+# Estimation des biais
+biais_g <- mean(sigma_g2) - sigma2
+cat("biais_g = ", biais_g)
+
+biais_EMM <- mean(sigma2_EMM) - sigma2
+cat("biais_EMM = ", biais_EMM)
+
+biais_p_EMM <- mean(sigma2p_EMM) - sigma2
+cat("biais_p_EMM = ", biais_p_EMM)
+
+biais_EMV <- mean(sigma2_EMV) - sigma2
+cat("biais_EMV = ", biais_EMV)
+
+# Estimation des risques quadratiques
+rq_g <- mean((sigma_g2 - sigma2)^2)
+cat("rq_g = ", rq_g)
+
+rq_EMM <- mean((sigma2_EMM - sigma2)^2)
+cat("rq_EMM = ", rq_EMM)
+
+rq_p_EMM <- mean((sigma2p_EMM - sigma2)^2)
+cat("rq_p_EMM = ", rq_p_EMM)
+
+rq_EMV <- mean((sigma2_EMV - sigma2)^2)
+cat("rq_EMV = ", rq_EMV)
+
+# On choisit le maximum de vraisemblance
+
+```
+On choisit le maximum de vraisemblance car il est sans biais et efficace.
+
+## Question 4
+```{r}
+sigma <- 1
+liste_n <- c(10, 50, 100, 250, 500, 750, 1000, 1500, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 35000, 50000, 75000, 100000, 150000, 200000)
+m <- 100
+sigma2 <- sigma^2
+
+
+l_prop <- rep(0, length(liste_n))
+cpt <- 1
+
+# On fait varier N
+for (n in liste_n){
+A1 <- replicate(m, rnorm ( n = n, m = 0, sd = sigma))
+A2 <- replicate(m, rnorm ( n = n, m = 0, sd = sigma))
+  
+X = sqrt( A1^2 + A2^2)
+  
+sigma2_EMV <- colSums( X^2) / (2 * n)
+  
+epsilon <- 0.01
+  
+ecart_abs <- abs(sigma2_EMV - sigma2)
+  
+verif <- (ecart_abs > epsilon)
+proportion <- sum(verif) / length(verif)
+l_prop[cpt] <- proportion
+cpt <- cpt + 1
+  }
+
+par(mfcol = c(1,2))
+plot(liste_n, l_prop)
+
+# On fait varier les epsilons
+l_epsi <- c(0.1, 0.05, 0.025,  0.01, 0.005, 0.0025, 0.001)
+n <- 2 * 10^5
+l_prop2 <- rep(0, length(l_epsi))
+cpt <- 1
+for (epsi in l_epsi){
+  A1 <- replicate(m, rnorm ( n = n, m = 0, sd = sigma))
+  A2 <- replicate(m, rnorm ( n = n, m = 0, sd = sigma))
+  X = sqrt( A1^2 + A2^2)
+  sigma2_EMV <- colSums(X^2) / (2 * n)
+  ecart_abs <- abs(sigma2_EMV - sigma2)
+  verif <- (ecart_abs > epsi)
+  proportion <- sum(verif) / length(verif)
+  l_prop2[cpt] <- proportion
+  cpt <- cpt + 1
+}
+plot(l_epsi, l_prop2)
+
+```
+
+On a
+$$
+\mathbb{P}(| T_n - \sigma^2| > \epsilon) = \mathbb{P}(T_n > \sigma^2 + \epsilon) + \mathbb{P}(T_n < \sigma^2 - \epsilon)
+$$
+$$
+= 1 - (\mathbb{P}(T_n <\sigma^2 +  \epsilon) - \mathbb{P}(T_n < \sigma^2 - \epsilon))
+$$
+D'où
+\begin{equation}
+\boxed{ \mathbb{P}(| T_n - \sigma^2| > \epsilon)= 1 - \mathbb{P}(\sigma^2 - \epsilon < T_n <  \sigma^2 + \epsilon) }
+\end{equation}
+
+Or $T_n$ est sans biais et efficace donc $T_n \underset{n \to +\infty}{\longrightarrow} \sigma^2$.
+
+Donc $|T_n - \sigma^2| \leq \epsilon$ est un évenement quasi certain lorsque $n$ tend vers $+\infty$ et $\forall \epsilon > 0,\ \mathbb{P}(|T_n - \sigma^2| \leq \epsilon) \underset{n \to +\infty}{\longrightarrow} 1$ et donc $\mathbb{P}(|T_n - \sigma^2|) \underset{n \to +\infty}{\longrightarrow} 0$.
+
+On peut clairement voir que plus on augmente $n$ et $\epsilon$, plus l'estimation de la probabilité tend rapidement vers 0. Mais plus $\epsilon$ est petit, plus la valeur $0$ sera difficile à atteindre.
+
+## Question 5
+```{r}
+# On choisit l'EMV
+sigma2 <- 9
+
+# Fonction simulant une VA de loi Rayleigh
+r_Rayleigh <- function(n, sigma2){
+  a1 <- rnorm(n, mean = 0, sd = sqrt(sigma2))
+  a2 <- rnorm(n, mean = 0, sd = sqrt(sigma2))
+  sqrt(a1^2 + a2^2)
+  
+}
+
+emv_ray <-function(x){
+    # Estimateur de maximum vraisemblance où x est un échantillon de la loi de Rayleigh
+    sum(x^2) / (2 * length(x))
+}
+par(mfcol = c(1, 2))
+
+histolarg <- function(x, xlim=NULL, col=NULL,...)
+{
+  
+  # Trace l'histogramme des classes de même largeur
+  # Longueur du jeu de données
+  n <- length(x)
+  
+  # Nombre de classes (règle de Sturges)
+  if (n < 12) k <- 5 else k <- round(log2(n) + 1)
+
+  # Bornes des classes
+  range_x <- max(x)-min(x)
+  a0 <- min(x) - 0.025 * range_x
+  ak <- max(x) + 0.025 * range_x
+  bornes <- seq(a0, ak, length=k+1)
+  
+  # Étendue du tracé
+  if (is.null(xlim))
+    xlim <- c(bornes[1], bornes[k+1])
+  
+  # Histogramme
+  histx <- hist(x, prob=T, col=col, breaks=bornes, xlim=xlim, ...)
+}
+
+# Cette fonction trace le graphe de probabilité pour la loi normale
+graphe_proba_normale <- function(x){
+  len_x <- length(x)
+  # Trie et retire le dernier element
+  xsorted <- sort(x)[1 : (len_x - 1)]
+  
+  y<- qnorm(seq(1, len_x - 1)/ len_x)
+  reglin <-lm( y ~ xsorted)
+  sigma <- 1 / reglin$coefficients[2]
+  moyenne <- -1 * reglin$coefficients[1] * sigma
+  cat("n = ", len_x)
+  
+  cat("moyenne = ", moyenne)
+  
+  cat("sigma^2 = ", sigma^2)
+  
+  plot(xsorted, y)
+  
+}
+
+# Trace l'histogramme des m estimations de sigma2 ainsi que le graphe de probabilité pour la loi normale
+simu_echant_emv <- function (sig2, m ,n){
+  emvs <- rep(0, m)
+  for (i in 1 : m){
+    x <- r_Rayleigh(n, sigma2)
+    emvs[i] <- emv_ray(x)
+  }
+  histolarg(emvs)
+  graphe_proba_normale(emvs)
+}
+
+
+simu_echant_emv(sigma2, 100, 5)
+simu_echant_emv(sigma2, 100, 10)
+simu_echant_emv(sigma2, 100, 50)
+simu_echant_emv(sigma2, 100, 50000)
+
+```
+On constate donc que l'estimateur du maximum de vraisemblance est asymptotiquement efficace.
+
